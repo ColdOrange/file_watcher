@@ -13,13 +13,15 @@ defmodule FileWatcher.MixProject do
 
   def application do
     [
+      mod: {FileWatcher, []},
       extra_applications: [:logger]
     ]
   end
 
   defp deps do
     [
-
+      {:file_system, "~> 0.2"},
+      {:httpoison, "~> 1.5"}
     ]
   end
 end
