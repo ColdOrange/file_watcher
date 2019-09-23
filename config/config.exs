@@ -1,6 +1,8 @@
-import Mix.Config
+import Config
 
-source_dir = "/Users/Orange/Desktop/svr_proj/trunk"
+# path mapping between local and remote project dir
+source_dir = "c:/Users/wenjuxu/Desktop/svr_proj/trunk"
+remote_dir = "/data1/home/wenjuxu/svr_proj/trunk"
 
 watch_files =
   [
@@ -10,9 +12,19 @@ watch_files =
   ]
   |> Enum.into(%{})
 
-remote_addr = "http://127.0.0.1:8759"
+remote_addr = "http://10.125.40.202:8759"
+
+upload_urls = [
+  # file_type: upload_url
+  protocol: URI.merge(remote_addr, "/upload/protocol") |> to_string(),
+  oss_desc: URI.merge(remote_addr, "/upload/oss_desc") |> to_string()
+]
+
+http_proxy = {:http, "web-proxy.tencent.com", 8080}
 
 config :file_watcher,
   source_dir: source_dir,
+  remote_dir: remote_dir,
   watch_files: watch_files,
-  remote_addr: remote_addr
+  upload_urls: upload_urls,
+  http_proxy: http_proxy

@@ -7,11 +7,6 @@ defmodule FileWatcher.Uploader do
   # wait @upload_delay milliseconds after add(file), to merge several changes on same file
   @upload_delay 10000
 
-  # remote server address and urls
-  @remote_addr Application.get_env(:file_watcher, :remote_addr)
-  @url_upload_protocol URI.merge(@remote_addr, "/upload/protocol") |> to_string()
-  @url_upload_oss_desc URI.merge(@remote_addr, "/upload/oss_desc") |> to_string()
-
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
@@ -55,29 +50,71 @@ defmodule FileWatcher.Uploader do
   @impl true
   def handle_info(:upload, %{upload_files: upload_files}) do
     upload_files
-    |> Enum.each(fn {file_type, file_path} = file ->
-      Logger.debug("Uploading file: #{inspect(file)}")
-      upload(file_type, file_path)
-    end)
+    # TODO: merge same urls
+    |> Enum.each(fn file -> upload(file) end)
 
     {:noreply, %__MODULE__{}}
   end
 
-  defp upload(:protocol, file_path) do
-    Logger.info("Upload protocol: <#{file_path}>")
+  defp upload({file_type, file_path} = file) do
+    Logger.info("Uploading file: #{inspect(file)}")
 
-    case HTTPoison.post(@url_upload_protocol, {:file, file_path}) do
-      {:ok, response} -> Logger.info("#{inspect(response)}")
-      {:error, reason} -> Logger.error("#{inspect(reason)}")
+    upload_url =
+      Application.fetch_env!(:file_watcher, :upload_urls)
+      |> Keyword.get(file_type)
+
+    post_body = {
+      :multipart,
+      [
+        # file path
+        {"filepath", file_path},
+        # file content
+        {:file, file_path}
+      ]
+    }
+
+    case FileWatcher.HttpProxy.post(upload_url, post_body) do
+      {:ok, %HTTPoison.Response{status_code: 200} = response} ->
+        response
+        |> HTTPoison.Handlers.Multipart.decode_body()
+        |> update_file()
+
+      {:ok, response} ->
+        Logger.error("Server response error: #{inspect(response)}")
+
+      {:error, reason} ->
+        Logger.error("HTTP post error: #{inspect(reason)}")
     end
   end
 
-  defp upload(:oss_desc, file_path) do
-    Logger.info("Upload oss_desc: <#{file_path}>")
+  @doc """
+  Retrieve changed files from server, and update local ones.
 
-    case HTTPoison.post(@url_upload_oss_desc, {:file, file_path}) do
-      {:ok, response} -> Logger.info("#{inspect(response)}")
-      {:error, reason} -> Logger.error("#{inspect(reason)}")
+  A response_list is a (decoded) multipart form-data list, contain several files each is represented as
+  a {file_path, file_content} multipart pair.
+  """
+  def update_file([{_path_meta, file_path}, {_file_meta, file_content} | response_list]) do
+    # map file path from remote dir to local dir
+    file_path =
+      String.replace_prefix(
+        file_path,
+        Application.fetch_env!(:file_watcher, :remote_dir),
+        Application.fetch_env!(:file_watcher, :source_dir)
+      )
+
+    case File.write(file_path, file_content) do
+      :ok ->
+        Logger.info("Update file <#{file_path}> success")
+        update_file(response_list)
+
+      {:error, reason} ->
+        Logger.error("Update file <#{file_path}> failed: #{reason}")
     end
   end
+
+  # Tail recursion of response_list, do nothing.
+  def update_file([]), do: nil
+
+  # Invalid responses, just ignore.
+  def update_file(_other), do: :ignore
 end

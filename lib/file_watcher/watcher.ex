@@ -3,7 +3,7 @@ defmodule FileWatcher.Watcher do
   use GenServer
 
   # files to watch, tuple: {dir, {file_type, file_regex}}
-  @watch_files Application.get_env(:file_watcher, :watch_files)
+  @watch_files Application.fetch_env!(:file_watcher, :watch_files)
 
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -18,7 +18,7 @@ defmodule FileWatcher.Watcher do
   end
 
   @impl true
-  def handle_info({:file_event, watcher_pid, {file_path, events}}, state) do
+  def handle_info({:file_event, _watcher_pid, {file_path, events}}, state) do
     with {true, file_type} <- is_watch_file(file_path),
          true <- is_watch_events(events) do
       file = {file_type, file_path}
