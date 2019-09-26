@@ -18,7 +18,7 @@ defmodule FileWatcher.Uploader do
   intended to perform on this file is done. A new call will refresh the timer.
   """
   def add(file) do
-    GenServer.call(__MODULE__, {:add, file})
+    GenServer.cast(__MODULE__, {:add, file})
   end
 
   @impl true
@@ -27,7 +27,7 @@ defmodule FileWatcher.Uploader do
   end
 
   @impl true
-  def handle_call({:add, file}, _from, %{upload_files: upload_files, timer: timer}) do
+  def handle_cast({:add, file}, %{upload_files: upload_files, timer: timer}) do
     if timer != nil do
       case Process.cancel_timer(timer) do
         false ->
@@ -44,7 +44,7 @@ defmodule FileWatcher.Uploader do
     state = %{upload_files: MapSet.put(upload_files, file), timer: timer}
     Logger.info("Add file: #{inspect(file)}, state: #{inspect(state)}")
 
-    {:reply, :ok, state}
+    {:noreply, state}
   end
 
   @impl true
