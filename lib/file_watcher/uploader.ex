@@ -50,14 +50,17 @@ defmodule FileWatcher.Uploader do
   @impl true
   def handle_info(:upload, %{upload_files: upload_files}) do
     upload_files
-    # TODO: merge same urls
-    |> Enum.each(fn file -> upload(file) end)
+    |> Enum.group_by(
+      fn {file_type, _} -> file_type end,
+      fn {_, file_path} -> file_path end
+    )
+    |> Enum.each(fn {file_type, file_paths} -> upload(file_type, file_paths) end)
 
     {:noreply, %__MODULE__{}}
   end
 
-  defp upload({file_type, file_path} = file) do
-    Logger.info("Uploading file: #{inspect(file)}")
+  defp upload(file_type, file_paths) do
+    Logger.info("Uploading #{inspect(file_type)} files: #{inspect(file_paths)}")
 
     upload_url =
       Application.fetch_env!(:file_watcher, :upload_urls)
@@ -65,12 +68,15 @@ defmodule FileWatcher.Uploader do
 
     post_body = {
       :multipart,
-      [
-        # file path
-        {"filepath", file_path},
-        # file content
-        {:file, file_path}
-      ]
+      Enum.flat_map(Enum.with_index(file_paths), fn {file_path, i} ->
+        [
+          # file path
+          {"filepath#{i}", file_path},
+          # file content
+          {:file, file_path,
+           {"form-data", [name: ~s("file#{i}"), filename: ~s("#{Path.basename(file_path)}")]}, []}
+        ]
+      end)
     }
 
     case FileWatcher.HttpProxy.post(upload_url, post_body) do
