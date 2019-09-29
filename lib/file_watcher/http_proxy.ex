@@ -6,6 +6,6 @@ defmodule FileWatcher.HttpProxy do
   def process_request_options(options) do
     options
     |> Keyword.put(:proxy, @http_proxy)
-    |> Keyword.put(:recv_timeout, :infinity)
+    |> Keyword.put(:recv_timeout, 600_000)
   end
 end
