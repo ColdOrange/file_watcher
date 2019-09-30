@@ -28,3 +28,5 @@ config :file_watcher,
   watch_files: watch_files,
   upload_urls: upload_urls,
   http_proxy: http_proxy
+
+config :logger, :console, format: "\n$date $time [$level] $levelpad$message\n"
