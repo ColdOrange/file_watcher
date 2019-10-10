@@ -1,11 +1,13 @@
 defmodule FileWatcher.Uploader do
-  require Logger
+  @moduledoc false
+
   use GenServer
+  require Logger
 
   defstruct upload_files: MapSet.new(), timer: nil
 
   # wait @upload_delay milliseconds after add(file), to merge several changes on same file
-  @upload_delay 10000
+  @upload_delay 10_000
 
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -93,13 +95,10 @@ defmodule FileWatcher.Uploader do
     end
   end
 
-  @doc """
-  Retrieve changed files from server, and update local ones.
-
-  A response_list is a (decoded) multipart form-data list, contain several files each is represented as
-  a {file_path, file_content} multipart pair.
-  """
-  def update_file([{_path_meta, file_path}, {_file_meta, file_content} | response_list]) do
+  #  Retrieve changed files from server, and update local ones.
+  #  A response_list is a (decoded) multipart form-data list, contain several files each is represented as
+  #  a {file_path, file_content} multipart pair.
+  defp update_file([{_path_meta, file_path}, {_file_meta, file_content} | response_list]) do
     # map file path from remote dir to local dir
     file_path =
       String.replace_prefix(
@@ -119,8 +118,8 @@ defmodule FileWatcher.Uploader do
   end
 
   # Tail recursion of response_list, do nothing.
-  def update_file([]), do: nil
+  defp update_file([]), do: nil
 
   # Invalid responses, just ignore.
-  def update_file(_other), do: :ignore
+  defp update_file(_other), do: :ignore
 end

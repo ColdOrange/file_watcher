@@ -1,4 +1,6 @@
 defmodule FileWatcher.HttpProxy do
+  @moduledoc false
+
   use HTTPoison.Base
 
   @http_proxy Application.fetch_env!(:file_watcher, :http_proxy)

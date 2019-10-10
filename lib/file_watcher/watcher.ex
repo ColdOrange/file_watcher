@@ -1,6 +1,8 @@
 defmodule FileWatcher.Watcher do
-  require Logger
+  @moduledoc false
+
   use GenServer
+  require Logger
 
   # files to watch, tuple: {dir, {file_type, file_regex}}
   @watch_files Application.fetch_env!(:file_watcher, :watch_files)

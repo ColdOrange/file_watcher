@@ -21,7 +21,8 @@ defmodule FileWatcher.MixProject do
   defp deps do
     [
       {:file_system, "~> 0.2"},
-      {:httpoison, "~> 1.5"}
+      {:httpoison, "~> 1.5"},
+      {:credo, "~> 1.1.5", only: [:dev, :test], runtime: false}
     ]
   end
 end
