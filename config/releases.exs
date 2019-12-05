@@ -9,7 +9,8 @@ watch_files =
     # {dir, {file_type, file_regex}}
     {Path.join(source_dir, "libsrc/protocol"), {:protocol, ~r/.*\.proto$/}},
     {Path.join(source_dir, "libsrc/log"), {:oss_desc, ~r/^oss_desc\.xml$/}},
-    {Path.join(source_dir, "excel/excel_config"), {:excel, ~r/^[^~].*\.xlsx$/}}
+    {Path.join(source_dir, "libsrc/tcaplus_table_desc"), {:tcaplus_table, ~r/.*\.xml$/}}
+    # {Path.join(source_dir, "excel/excel_config"), {:excel, ~r/^[^~].*\.xlsx$/}}
   ]
   |> Enum.into(%{})
 
@@ -19,6 +20,7 @@ upload_urls = [
   # file_type: upload_url
   protocol: URI.merge(remote_addr, "/upload/protocol") |> to_string(),
   oss_desc: URI.merge(remote_addr, "/upload/oss_desc") |> to_string(),
+  tcaplus_table: URI.merge(remote_addr, "/upload/tcaplus_table") |> to_string(),
   excel: URI.merge(remote_addr, "/upload/excel") |> to_string()
 ]
 
